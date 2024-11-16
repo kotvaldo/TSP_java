@@ -7,6 +7,7 @@ package tsp;
 import java.io.File;
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.util.Arrays;
 import java.util.StringTokenizer;
 import java.io.FileNotFoundException;
 
@@ -29,22 +30,23 @@ public class TSP {
     public void ries() {
         // tu pridajte heuristiku
 
-        nearestNeighbor(0);
+        nearestNeighbor(4);
         //insertionHeuristic();
     }
 
     public void nearestNeighbor(int start) {
+        start--; // Prevod z číslovania od 1 na indexovanie od 0
         boolean[] visited = new boolean[M]; // Sledovanie navštívených uzlov
-        x[0] = start; // Začíname vo vrchole "start"
-        visited[start] = true;
-        int current = start;
-        int totalDistance = 0;
+        x[0] = start + 1; // Prvý uzol trasy (vrchol začína od 1 pre číslovanie)
+        visited[start] = true; // Označíme počiatočný uzol ako navštívený
+        int current = start; // Aktuálny uzol
+        int totalDistance = 0; // Celková vzdialenosť trasy
 
         for (int i = 1; i < M; i++) {
-            int nextNode = -1;
+            int nextNode = -1; // Najbližší uzol
             int minDistance = Integer.MAX_VALUE;
 
-            // Nájdeme najbližší uzol
+            // Nájdeme najbližší uzol, ktorý ešte nebol navštívený
             for (int j = 0; j < M; j++) {
                 if (!visited[j] && data[current][j] < minDistance) {
                     nextNode = j;
@@ -52,29 +54,29 @@ public class TSP {
                 }
             }
 
-            // Pridáme najbližší uzol do trasy
-            x[i] = nextNode;
-            visited[nextNode] = true;
-            totalDistance += minDistance;
-            current = nextNode;
+            x[i] = nextNode + 1; // Uložíme uzol s číslovaním od 1
+            visited[nextNode] = true; // Označíme ho ako navštívený
+            totalDistance += minDistance; // Pripočítame vzdialenosť
+            current = nextNode; // Aktualizujeme aktuálny uzol
         }
 
-        // Návrat späť do počiatočného uzla
         totalDistance += data[current][start];
 
-        System.out.println("Trasa (najbližší sused): " + java.util.Arrays.toString(x));
+        // Výstup výsledkov
+        System.out.println("Trasa (najbližší sused): " + Arrays.toString(x));
         System.out.println("Celková vzdialenosť: " + totalDistance);
     }
 
+
     public void insertionHeuristic() {
         java.util.List<Integer> route = new java.util.ArrayList<>();
-        route.add(0); // Začíname vo vrchole 0
-        route.add(0); // Počiatočná trasa: návrat do toho istého uzla
+        route.add(1); // Začíname vo vrchole 1 (pridáme 1 pre číslovanie od 1)
+        route.add(1); // Počiatočná trasa: návrat do toho istého uzla
 
         boolean[] visited = new boolean[M];
         visited[0] = true;
 
-        // Nájdeme prvé dva najbližšie uzly k uzlu 0
+        // Nájdeme prvé dva najbližšie uzly k uzlu 1
         int closest = -1;
         int secondClosest = -1;
         int minDistance = Integer.MAX_VALUE;
@@ -87,11 +89,11 @@ public class TSP {
             }
         }
 
-        route.add(1, closest);
+        route.add(1, closest + 1); // Pridáme 1, aby sme zodpovedali číslovaniu od 1
         visited[closest] = true;
 
         if (secondClosest != -1) {
-            route.add(1, secondClosest);
+            route.add(1, secondClosest + 1); // Pridáme 1, aby sme zodpovedali číslovaniu od 1
             visited[secondClosest] = true;
         }
 
@@ -103,7 +105,9 @@ public class TSP {
 
                 // Nájdeme najlepšiu pozíciu na vsunutie uzla
                 for (int j = 0; j < route.size() - 1; j++) {
-                    int increase = data[route.get(j)][i] + data[i][route.get(j + 1)] - data[route.get(j)][route.get(j + 1)];
+                    int currentNode = route.get(j) - 1; // Znížime index pre výpočty
+                    int nextNode = route.get(j + 1) - 1; // Znížime index pre výpočty
+                    int increase = data[currentNode][i] + data[i][nextNode] - data[currentNode][nextNode];
                     if (increase < bestIncrease) {
                         bestIncrease = increase;
                         bestPosition = j + 1;
@@ -111,7 +115,7 @@ public class TSP {
                 }
 
                 // Vsunieme uzol na najlepšiu pozíciu
-                route.add(bestPosition, i);
+                route.add(bestPosition, i + 1); // Pridáme 1, aby sme zodpovedali číslovaniu od 1
                 visited[i] = true;
             }
         }
@@ -119,12 +123,15 @@ public class TSP {
         // Výpočet celkovej vzdialenosti
         int totalDistance = 0;
         for (int i = 0; i < route.size() - 1; i++) {
-            totalDistance += data[route.get(i)][route.get(i + 1)];
+            int currentNode = route.get(i) - 1; // Znížime index pre výpočet
+            int nextNode = route.get(i + 1) - 1; // Znížime index pre výpočet
+            totalDistance += data[currentNode][nextNode];
         }
 
         System.out.println("Trasa (vsúvacia heuristika): " + route);
         System.out.println("Celková vzdialenosť: " + totalDistance);
     }
+
 
     public void read_file(File file) {
         try {
