@@ -32,7 +32,9 @@ public class TSP {
     }
 
     public void ries() {
-        /*int[] minX = new int[M + 1]; // O 1 väčšie pre návrat na štart
+        //nearestNeighbor(0);
+
+        int[] minX = new int[M + 1]; // O 1 väčšie pre návrat na štart
         int minDistance = Integer.MAX_VALUE;
         int minIndex = -1;
 
@@ -49,13 +51,15 @@ public class TSP {
         x = minX;
         distance = minDistance;
 
-        System.out.println("Najmenšia cesta zo všetkých je z vrchola: " + minIndex + ", [" + Arrays.toString(x) + "]");
+        System.out.println("Najmenšia cesta zo všetkých je z vrchola: " + minIndex + "," + Arrays.toString(x));
+        System.out.println("Dlzka pola pred vymenou: " + x.length);
         System.out.println("Dĺžka tej cesty: " + distance);
 
         swapAndEvaluate();
-        System.out.println("Trasa po výmene: [" + Arrays.toString(x) + "]");
+        System.out.println("Trasa po výmene: "+ Arrays.toString(x));
+        System.out.println("Dlzka pola po výmene: " + x.length);
         System.out.println("Dĺžka tej cesty: " + distance);
-    */
+
         //insertionHeuristic(0);
     }
 
@@ -173,10 +177,10 @@ public class TSP {
         int bestSwapDistance = distance;
 
         for (int i = 1; i < M - 1; i++) {
-            for (int j = i + 1; j < M; j++) {
+            for (int j = i + 1; j < M - 1; j++) {
                 int deltaCost = calculateDeltaCost(i, j);
 
-                if (deltaCost < 0) { // Swap improves the solution
+                if (deltaCost < 0) {
                     swapNodes(i, j);
                     int newDistance = calculateTotalDistance(x);
 
