@@ -7,10 +7,7 @@ package tsp;
 import java.io.File;
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.StringTokenizer;
+import java.util.*;
 import java.io.FileNotFoundException;
 
 import static java.util.Collections.swap;
@@ -32,104 +29,56 @@ public class TSP {
     }
 
     public void ries() {
-        //nearestNeighbor(0);
+        // Inicializácia trasy pomocou vsúvacej heuristiky
+        System.out.println("Inicializácia trasy pomocou vsúvacej heuristiky...");
+        insertionHeuristic(0); // Počiatočný uzol je 0
+        System.out.println("Počiatočná trasa: " + Arrays.toString(x));
+        System.out.println("Celková vzdialenosť po heuristike: " + distance);
 
-        int[] minX = new int[M + 1]; // O 1 väčšie pre návrat na štart
-        int minDistance = Integer.MAX_VALUE;
-        int minIndex = -1;
+        // Zlepšenie trasy pomocou Simulated Annealing
+        System.out.println("Zlepšovanie trasy pomocou Simulated Annealing...");
+        simulatedAnnealing();
 
-        // Pre každý vrchol voláme `nearestNeighbor`
-        for (int i = 0; i < M; i++) {
-            nearestNeighbor(i); // Vypočíta trasu so štartom v uzle `i`
-            if (distance < minDistance) { // Porovnáme dĺžku trasy
-                minDistance = distance;
-                minX = Arrays.copyOf(x, x.length); // Skopírujeme trasu
-                minIndex = i;
-            }
-        }
-
-        x = minX;
-        distance = minDistance;
-
-        System.out.println("Najmenšia cesta zo všetkých je z vrchola: " + minIndex + "," + Arrays.toString(x));
-        System.out.println("Dlzka pola pred vymenou: " + x.length);
-        System.out.println("Dĺžka tej cesty: " + distance);
-
-        swapAndEvaluate();
-        System.out.println("Trasa po výmene: "+ Arrays.toString(x));
-        System.out.println("Dlzka pola po výmene: " + x.length);
-        System.out.println("Dĺžka tej cesty: " + distance);
-
-        //insertionHeuristic(0);
-    }
-
-    public void nearestNeighbor(int start) {
-        boolean[] visited = new boolean[M + 1]; // Sledovanie navštívených uzlov
-        x[0] = start; // Prvý uzol trasy (vrchol začína od 1 pre číslovanie)
-        visited[start] = true; // Označíme počiatočný uzol ako navštívený
-        int current = start; // Aktuálny uzol
-        int totalDistance = 0; // Celková vzdialenosť trasy
-
-        for (int i = 1; i < M; i++) {
-            int nextNode = -1; // Najbližší uzol
-            int minDistance = Integer.MAX_VALUE;
-
-            // Nájdeme najbližší uzol, ktorý ešte nebol navštívený
-            for (int j = 0; j < M; j++) {
-                if (!visited[j] && data[current][j] < minDistance) {
-                    nextNode = j;
-                    minDistance = data[current][j];
-                }
-            }
-
-            x[i] = nextNode; // Uložíme uzol s číslovaním od 1
-            visited[nextNode] = true; // Označíme ho ako navštívený
-            totalDistance += minDistance; // Pripočítame vzdialenosť
-            current = nextNode; // Aktualizujeme aktuálny uzol
-        }
-
-        totalDistance += data[current][start];
-        x[x.length - 1] = start;
-        // Výstup výsledkov
-        //System.out.println("Trasa (najbližší sused): " + Arrays.toString(x));
-        //System.out.println("Celková vzdialenosť: " + totalDistance);
-        distance = totalDistance;
+        // Výstup konečného riešenia
+        System.out.println("Konečné riešenie po Simulated Annealing: " + Arrays.toString(x));
+        System.out.println("Celková vzdialenosť: " + distance);
     }
 
 
     public void insertionHeuristic(int startNode) {
         List<Integer> route = new ArrayList<>();
-        route.add(startNode);
         boolean[] visited = new boolean[M];
-        visited[startNode] = true;
 
-        int closest = -1;
-        int minDistance = Integer.MAX_VALUE;
+        int i1 = startNode;
+        route.add(i1);
+        visited[i1] = true;
 
+        int i2 = -1;
+        int maxDistance = Integer.MIN_VALUE;
         for (int i = 0; i < M; i++) {
-            if (!visited[i] && data[startNode][i] < minDistance) {
-                closest = i;
-                minDistance = data[startNode][i];
+            if (!visited[i] && data[i1][i] > maxDistance) {
+                i2 = i;
+                maxDistance = data[i1][i];
             }
         }
+        route.add(i2);
+        visited[i2] = true;
 
-        route.add(closest);
-        visited[closest] = true;
-
-        int secondClosest = -1;
+        // Určenie i3: Najvzdialenejší uzol od i2
+        int i3 = -1;
+        maxDistance = Integer.MIN_VALUE;
         for (int i = 0; i < M; i++) {
-            if (!visited[i] && data[closest][i] < minDistance) {
-                secondClosest = i;
-                minDistance = data[closest][i];
+            if (!visited[i] && data[i2][i] > maxDistance) {
+                i3 = i;
+                maxDistance = data[i2][i];
             }
-
         }
+        route.add(i3);
+        visited[i3] = true;
 
-        route.add(secondClosest); // Pridáme druhý najbližší uzol
-        visited[secondClosest] = true;
+        // Uzavrieme cyklus (vrátime sa na i1)
+        route.add(i1);
 
-        route.add(startNode); // Začíname vo vrchole
-        // Postupne vsúvame uzly do trasy
         while (route.size() < M + 1) {
             int candidateNode = -1;
             int bestIncrease = Integer.MAX_VALUE;
@@ -172,62 +121,83 @@ public class TSP {
 
 
 
-    public void swapAndEvaluate() {
-        int[] bestSwapPath = Arrays.copyOf(x, x.length);
-        int bestSwapDistance = distance;
+    public void simulatedAnnealing() {
+        int[] currentSolution = Arrays.copyOf(x, x.length);
+        int currentDistance = calculateTotalDistance(currentSolution);
+        int[] bestSolution = Arrays.copyOf(currentSolution, currentSolution.length);
+        int bestDistance = currentDistance;
 
-        for (int i = 1; i < M - 1; i++) {
-            for (int j = i + 1; j < M - 1; j++) {
-                int deltaCost = calculateDeltaCost(i, j);
+        double temperature = 10000.0; // Počiatočná teplota
+        double coolingRate = 0.995; // Faktor ochladzovania
+        int maxNeighbors = 40; // Maximálny počet skúmaných susedov na teplotu
+        int maxNoImprovement = 50; // Maximálny počet prechodov bez zlepšenia
 
-                if (deltaCost < 0) {
-                    swapNodes(i, j);
-                    int newDistance = calculateTotalDistance(x);
+        int noImprovementCounter = 0; // Počet prechodov bez zlepšenia
+        Random random = new Random();
 
-                    if (newDistance < bestSwapDistance) {
-                        bestSwapDistance = newDistance;
-                        bestSwapPath = Arrays.copyOf(x, x.length);
-                    }
+        while (temperature > 1 && noImprovementCounter < maxNoImprovement) {
+            for (int iteration = 0; iteration < maxNeighbors; iteration++) {
+                // Generovanie susedného riešenia (výmena dvoch vrcholov)
+                int[] neighborSolution = Arrays.copyOf(currentSolution, currentSolution.length);
+                int i = random.nextInt(M); // Náhodný index prvého vrchola
+                int j = random.nextInt(M); // Náhodný index druhého vrchola
+                while (i == j) {
+                    j = random.nextInt(M); // Zabezpečíme, že i != j
+                }
 
-                    // Undo the swap to continue checking other pairs
-                    swapNodes(i, j);
+                // Vykonáme výmenu dvoch vrcholov
+                int temp = neighborSolution[i];
+                neighborSolution[i] = neighborSolution[j];
+                neighborSolution[j] = temp;
+
+                // Vypočítame vzdialenosť nového riešenia
+                int neighborDistance = calculateTotalDistance(neighborSolution);
+
+                // Akceptujeme nové riešenie podľa Simulated Annealing kritéria
+                if (acceptanceProbability(currentDistance, neighborDistance, temperature) > random.nextDouble()) {
+                    currentSolution = neighborSolution;
+                    currentDistance = neighborDistance;
+                }
+
+                // Aktualizujeme najlepšie riešenie
+                if (currentDistance < bestDistance) {
+                    bestSolution = Arrays.copyOf(currentSolution, currentSolution.length);
+                    bestDistance = currentDistance;
+                    noImprovementCounter = 0; // Resetujeme počítadlo bez zlepšenia
+                } else {
+                    noImprovementCounter++;
                 }
             }
+
+            // Ochladzovanie
+            temperature *= coolingRate;
         }
 
-        // Update the solution with the best swap result
-        x = bestSwapPath;
-        distance = bestSwapDistance;
+        // Aktualizácia trasy a vzdialenosti na najlepšie nájdené riešenie
+        x = bestSolution;
+        distance = bestDistance;
+
+        System.out.println("Najlepšia trasa po Simulated Annealing: " + Arrays.toString(x));
+        System.out.println("Celková vzdialenosť: " + distance);
     }
 
-    // Calculate ΔCost for swapping two nodes in the path
-    private int calculateDeltaCost(int i, int j) {
-        int iPrev = (i - 1 + M) % M;
-        int iNext = (i + 1) % M;
-        int jPrev = (j - 1 + M) % M;
-        int jNext = (j + 1) % M;
-
-        int originalCost = data[x[iPrev]][x[i]] + data[x[i]][x[iNext]] + data[x[jPrev]][x[j]] + data[x[j]][x[jNext]];
-        int newCost = data[x[iPrev]][x[j]] + data[x[j]][x[iNext]] + data[x[jPrev]][x[i]] + data[x[i]][x[jNext]];
-
-        return newCost - originalCost;
-    }
-
-    // Swap nodes i and j in the path
-    private void swapNodes(int i, int j) {
-        int temp = x[i];
-        x[i] = x[j];
-        x[j] = temp;
-    }
-
-    // Calculate the total distance of the current path
+    // Vypočíta celkovú vzdialenosť pre danú trasu
     private int calculateTotalDistance(int[] path) {
-        int distance = 0;
-        for (int k = 0; k < path.length - 1; k++) {
-            distance += data[path[k]][path[k + 1]];
+        int totalDistance = 0;
+        for (int i = 0; i < path.length - 1; i++) {
+            totalDistance += data[path[i]][path[i + 1]];
         }
-        return distance;
+        return totalDistance;
     }
+
+    // Kritérium akceptácie nového riešenia
+    private double acceptanceProbability(int currentDistance, int neighborDistance, double temperature) {
+        if (neighborDistance < currentDistance) {
+            return 1.0; // Ak je riešenie lepšie, vždy ho akceptujeme
+        }
+        return Math.exp((currentDistance - neighborDistance) / temperature); // Pravdepodobnosť pre horšie riešenie
+    }
+
 
 
 
