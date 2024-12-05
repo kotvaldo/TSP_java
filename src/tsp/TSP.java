@@ -10,8 +10,6 @@ import java.io.FileReader;
 import java.util.*;
 import java.io.FileNotFoundException;
 
-import static java.util.Collections.swap;
-
 
 public class TSP {
 
@@ -19,7 +17,7 @@ public class TSP {
     int data[][];       // matica vzdialenosti
     int[] x;            // riesenie
     int distance;
-    int minIndex;
+
     public int getM() {
         return M;
     }
@@ -45,11 +43,10 @@ public class TSP {
     }
 
 
-    public void insertionHeuristic(int startNode) {
+    public void insertionHeuristic(int i1) {
         List<Integer> route = new ArrayList<>();
         boolean[] visited = new boolean[M];
 
-        int i1 = startNode;
         route.add(i1);
         visited[i1] = true;
 
@@ -111,7 +108,7 @@ public class TSP {
             totalDistance += data[currentNode][nextNode];
         }
         // Pridáme vzdialenosť od posledného uzla k prvému
-        totalDistance += data[route.get(route.size() - 1)][route.get(0)];
+        totalDistance += data[route.getLast()][route.getFirst()];
 
         distance = totalDistance;
 
