@@ -14,7 +14,7 @@ import java.io.FileNotFoundException;
 public class TSP {
 
     int M;              // pocet vrcholov 
-    int data[][];       // matica vzdialenosti
+    int[][] data;       // matica vzdialenosti
     int[] x;            // riesenie
     int distance;
 
@@ -120,100 +120,110 @@ public class TSP {
     }
 
 
-
     public void simulatedAnnealing() {
-        int[] currentSolution = Arrays.copyOf(x, x.length);
-        int currentDistance = calculateTotalDistance(currentSolution);
-        int[] bestSolution = Arrays.copyOf(currentSolution, currentSolution.length);
-        int bestDistance = currentDistance;
+        int[] x0 = Arrays.stream(x).toArray(); // Inicializácia počiatočného riešenia
+        int[] bestSolution = x0.clone(); // Najlepšie riešenie
+        int[] xi = x0.clone();
+        double tMax = 10000.0; // Počiatočná teplota
+        double beta = 0.001; // Ochladzovací parameter
+        double t = tMax; // Aktuálna teplota
 
-        double temperature = 10000.0; // Počiatočná teplota
-        double coolingRate = 0.995; // Faktor ochladzovania
-        int maxNeighbors = 40; // Maximálny počet skúmaných susedov na teplotu
-        int maxNoImprovement = 50; // Maximálny počet prechodov bez zlepšenia
-
-        int noImprovementCounter = 0; // Počet prechodov bez zlepšenia
-        Random random = new Random();
-
-        int iterationCount = 0; // Počítadlo iterácií
-        String terminationReason = ""; // Dôvod ukončenia
-
-        while (temperature > 1 && noImprovementCounter < maxNoImprovement) {
-            System.out.println("Iterácia " + iterationCount + " | Teplota: " + temperature + " | Najlepšia vzdialenosť: " + bestDistance);
-
-            for (int iteration = 0; iteration < maxNeighbors; iteration++) {
-                // Generovanie susedného riešenia (výmena dvoch vrcholov)
-                int[] neighborSolution = Arrays.copyOf(currentSolution, currentSolution.length);
-
-                // Vyberieme náhodný vrchol (index) z aktuálnej trasy
-                int i = random.nextInt(M); // Index vrcholu (od 0 po M-1)
-
-                // Identifikujeme jeho suseda (nasledujúci uzol v trase)
-                int j = (i + 1) % M; // Použitie modulu zabezpečí, že posledný vrchol sa spojí s prvým
-
-                // Výmena vrcholov
-                int temp = neighborSolution[i];
-                neighborSolution[i] = neighborSolution[j];
-                neighborSolution[j] = temp;
+        int v = Integer.MAX_VALUE; // Počet aktualizácií najlepšieho riešenia od posledného zahrievania
+        int r; // Počet preskúmaných prechodov od posledného zlepšenia
+        int w; // Celkový počet preskúmaných prechodov od poslednej zmeny teploty
+        int u = 40; // Maximálny počet prechodov od posledného zlepšenia
+        int q = 50; // Maximálny počet prechodov na jednu teplotu
+        int targetSwappedNode = -1;
 
 
-                // Vypočítame vzdialenosť nového riešenia
-                int neighborDistance = calculateTotalDistance(neighborSolution);
 
-                // Vypočítame pravdepodobnosť akceptácie
-                double probability = acceptanceProbability(currentDistance, neighborDistance, temperature);
+        while (v > 0) { // Vonkajší cyklus, kým sa najlepšie riešenie zlepšuje
+            System.out.println();
+            System.out.println("--------------------------------------------------------------------");
+            v = 0;
+            r = 0;
+            w = 0;
+            targetSwappedNode++;
+            int swapIndex = 0;
 
-                // Vypisovanie informácií
-                System.out.println("  Iterácia " + iteration + ":");
-                System.out.println("    Vygenerovaná vzdialenosť: " + neighborDistance);
-                System.out.println("    Pravdepodobnosť akceptácie: " + probability);
+            while (r < u) {
+                int[] x = xi.clone();
 
-                double h = random.nextDouble();
-                System.out.println("    Vygenoravané h: " + h);
-                // Akceptujeme nové riešenie podľa Simulated Annealing kritéria
-                if (probability > h) {
-                    currentSolution = neighborSolution;
-                    currentDistance = neighborDistance;
-                    System.out.println("    Riešenie akceptované.");
-                } else {
-                    System.out.println("    Riešenie odmietnuté.");
+                if (swapIndex >= x.length) {
+                    targetSwappedNode++;
+                    swapIndex = 0;
+                    if (targetSwappedNode >= x.length) {
+                        targetSwappedNode = 0;
+                    }
                 }
 
-                // Aktualizujeme najlepšie riešenie
-                if (currentDistance < bestDistance) {
-                    bestSolution = Arrays.copyOf(currentSolution, currentSolution.length);
-                    bestDistance = currentDistance;
-                    noImprovementCounter = 0; // Resetujeme počítadlo bez zlepšenia
-                    System.out.println("    Najlepšie riešenie aktualizované: " + Arrays.toString(bestSolution));
-                } else {
-                    noImprovementCounter++;
+                if (swapIndex == targetSwappedNode) {
+                    swapIndex++;
+                    continue;
                 }
+
+                swapNodes(x, targetSwappedNode, swapIndex);
+                swapIndex++;
+
+                if (targetSwappedNode == 0) {
+                    x[x.length - 1] = x[0];
+                }
+
+                int xiDist = calculateTotalDistance(xi);
+                int currDist = calculateTotalDistance(x);
+
+                System.out.println("Výmenné uzly: " + targetSwappedNode + " <-> " + (swapIndex - 1));
+                System.out.println("Aktuálna vzdialenosť: " + currDist + ", Predošlá vzdialenosť: " + xiDist);
+
+                w++;
+                r++;
+
+                if (w == q) {
+                    t = t / (1 + beta * t);
+                    System.out.println("Zmena teploty: " + t);
+                    w = 0;
+                }
+
+                if (currDist <= xiDist) {
+                    r = 0;
+                    xi = x.clone();
+                    if (currDist < calculateTotalDistance(bestSolution)) {
+                        bestSolution = xi.clone();
+                        v++;
+                        System.out.println("Nové najlepšie riešenie: " + Arrays.toString(bestSolution));
+                        System.out.println("Nová najlepšia vzdialenosť: " + calculateTotalDistance(bestSolution));
+                    }
+                } else {
+                    double p = acceptanceProbability(xiDist, currDist, t);
+                    double h = Math.random();
+                    System.out.println("Pravdepodobnosť akceptácie: " + p + ", Náhodné číslo: " + h);
+
+                    if (h < p) {
+                        xi = x.clone();
+                        r = 0;
+                        System.out.println("Nové riešenie akceptované napriek vyššej vzdialenosti.");
+                    } else {
+                        System.out.println("Riešenie zamietnuté.");
+                    }
+                }
+                System.out.println("--------------------------------------------------------------------");
             }
 
-            // Ochladzovanie
-            System.out.println("Teplota pred ochladzovaním: " + temperature);
-            temperature *= coolingRate;
-            System.out.println("Teplota po ochladzovaní: " + temperature);
-            iterationCount++;
-
-            // Skontrolujeme dôvod ukončenia
-            if (temperature <= 1) {
-                terminationReason = "Teplota klesla pod prahovú hodnotu.";
-            } else if (noImprovementCounter >= maxNoImprovement) {
-                terminationReason = "Maximálny počet iterácií bez zlepšenia bol dosiahnutý.";
-            }
+            t = tMax; // Reset teploty
+            System.out.println("Reset teploty na " + tMax);
         }
 
-        // Aktualizácia najlepšieho riešenia
-        x = bestSolution;
-        distance = bestDistance;
+        this.x = bestSolution.clone();
+        distance = calculateTotalDistance(x);
 
-        // Výstup dôvodu ukončenia
-        System.out.println("Algoritmus bol ukončený. Dôvod: " + terminationReason);
-        System.out.println("Najlepšia trasa po Simulated Annealing: " + Arrays.toString(x));
-        System.out.println("Celková vzdialenosť: " + distance);
+
     }
 
+    private void swapNodes(int[] x,int i, int j) {
+        int temp = x[i];
+        x[i] = x[j];
+        x[j] = temp;
+    }
 
     private int calculateTotalDistance(int[] path) {
         int totalDistance = 0;
@@ -230,21 +240,36 @@ public class TSP {
     // Kritérium akceptácie nového riešenia
     private double acceptanceProbability(int currentDistance, int neighborDistance, double temperature) {
         double deltaE = neighborDistance - currentDistance;
-        System.out.println("    ΔE (neighborDistance - currentDistance): " + deltaE);
-        System.out.println("    Aktuálna teplota T: " + temperature);
+        System.out.println("Aktuálna teplota T: " + temperature);
 
         if (deltaE < 0) {
-            return 1.0; // Lepšie riešenie je vždy akceptované
+            return 1.0;
         }
 
-        double probability = Math.exp(-deltaE / temperature);
-        System.out.println(" Vypočítaná pravdepodobnosť: " + probability);
-
-        return probability;
+        return Math.exp(-deltaE / temperature);
     }
 
 
+    private List<Integer> findNearestNeighbors(int vertex, int count) {
+        // Vytvoríme zoznam dvojíc (vrchol, vzdialenosť)
+        List<int[]> distances = new ArrayList<>();
+        for (int i = 0; i < data.length; i++) {
+            if (i != vertex) { // Vynecháme samotný vrchol A
+                distances.add(new int[]{i, data[vertex][i]});
+            }
+        }
 
+        // Zoradíme podľa vzdialenosti
+        distances.sort(Comparator.comparingInt(pair -> pair[1]));
+
+        // Vyberieme 'count' najbližších vrcholov
+        List<Integer> nearestNeighbors = new ArrayList<>();
+        for (int i = 0; i < Math.min(count, distances.size()); i++) {
+            nearestNeighbors.add(distances.get(i)[0]);
+        }
+
+        return nearestNeighbors;
+    }
 
     public void read_file(File file) {
         try {
