@@ -250,26 +250,7 @@ public class TSP {
     }
 
 
-    private List<Integer> findNearestNeighbors(int vertex, int count) {
-        // Vytvoríme zoznam dvojíc (vrchol, vzdialenosť)
-        List<int[]> distances = new ArrayList<>();
-        for (int i = 0; i < data.length; i++) {
-            if (i != vertex) { // Vynecháme samotný vrchol A
-                distances.add(new int[]{i, data[vertex][i]});
-            }
-        }
 
-        // Zoradíme podľa vzdialenosti
-        distances.sort(Comparator.comparingInt(pair -> pair[1]));
-
-        // Vyberieme 'count' najbližších vrcholov
-        List<Integer> nearestNeighbors = new ArrayList<>();
-        for (int i = 0; i < Math.min(count, distances.size()); i++) {
-            nearestNeighbors.add(distances.get(i)[0]);
-        }
-
-        return nearestNeighbors;
-    }
 
     public void read_file(File file) {
         try {
