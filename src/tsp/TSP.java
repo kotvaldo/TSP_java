@@ -95,7 +95,6 @@ public class TSP {
                 }
             }
 
-            // Insert the candidate node
             route.add(bestPosition, candidateNode);
             visited[candidateNode] = true;
         }
@@ -134,7 +133,7 @@ public class TSP {
         int u = 40; // Maximálny počet prechodov od posledného zlepšenia
         int q = 50; // Maximálny počet prechodov na jednu teplotu
         int targetSwappedNode = -1;
-
+        int i = 0;
 
 
         while (v > 0) { // Vonkajší cyklus, kým sa najlepšie riešenie zlepšuje
@@ -143,43 +142,47 @@ public class TSP {
             v = 0;
             r = 0;
             w = 0;
-            targetSwappedNode++;
+            targetSwappedNode = i;
             int swapIndex = 0;
 
             while (r < u) {
                 int[] x = xi.clone();
 
-                if (swapIndex >= x.length) {
-                    targetSwappedNode++;
-                    swapIndex = 0;
-                    if (targetSwappedNode >= x.length) {
-                        targetSwappedNode = 0;
-                    }
-                }
-
-                if (swapIndex == targetSwappedNode) {
+                if(targetSwappedNode == swapIndex) {
                     swapIndex++;
                     continue;
                 }
+                if (swapIndex >= x.length) {
+                    i++;
+                    if (i >= x.length) {
+                        break;
+                    }
+                    targetSwappedNode = i;
+                    swapIndex = 0;
+                    continue;
+                }
+
+                int target = x[targetSwappedNode];
+                int swap = x[swapIndex];
+                System.out.println("Výmenné indexy: " + targetSwappedNode + " <-> " + swapIndex);
 
                 swapNodes(x, targetSwappedNode, swapIndex);
                 swapIndex++;
 
-                if (targetSwappedNode == 0) {
-                    x[x.length - 1] = x[0];
-                }
+                x[x.length - 1] = x[0];
+
 
                 int xiDist = calculateTotalDistance(xi);
                 int currDist = calculateTotalDistance(x);
 
-                System.out.println("Výmenné uzly: " + targetSwappedNode + " <-> " + (swapIndex - 1));
+                System.out.println("Výmenné uzly: " + target + " <-> " + swap);
                 System.out.println("Aktuálna vzdialenosť: " + currDist + ", Predošlá vzdialenosť: " + xiDist);
 
                 w++;
                 r++;
 
                 if (w == q) {
-                    t = t / (1 + beta * t);
+                    t = t / (1 + (beta * t));
                     System.out.println("Zmena teploty: " + t);
                     w = 0;
                 }
@@ -187,12 +190,14 @@ public class TSP {
                 if (currDist <= xiDist) {
                     r = 0;
                     xi = x.clone();
+                    // Akceptujeme nové riešenie ako najlepšie
                     if (currDist < calculateTotalDistance(bestSolution)) {
                         bestSolution = xi.clone();
                         v++;
                         System.out.println("Nové najlepšie riešenie: " + Arrays.toString(bestSolution));
                         System.out.println("Nová najlepšia vzdialenosť: " + calculateTotalDistance(bestSolution));
                     }
+                    targetSwappedNode = swapIndex - 1;
                 } else {
                     double p = acceptanceProbability(xiDist, currDist, t);
                     double h = Math.random();
@@ -202,6 +207,7 @@ public class TSP {
                         xi = x.clone();
                         r = 0;
                         System.out.println("Nové riešenie akceptované napriek vyššej vzdialenosti.");
+                        targetSwappedNode = swapIndex - 1;
                     } else {
                         System.out.println("Riešenie zamietnuté.");
                     }
@@ -209,7 +215,7 @@ public class TSP {
                 System.out.println("--------------------------------------------------------------------");
             }
 
-            t = tMax; // Reset teploty
+            t = tMax;
             System.out.println("Reset teploty na " + tMax);
         }
 
@@ -218,6 +224,8 @@ public class TSP {
 
 
     }
+
+
 
     private void swapNodes(int[] x,int i, int j) {
         int temp = x[i];
@@ -237,7 +245,6 @@ public class TSP {
 
 
 
-    // Kritérium akceptácie nového riešenia
     private double acceptanceProbability(int currentDistance, int neighborDistance, double temperature) {
         double deltaE = neighborDistance - currentDistance;
         System.out.println("Aktuálna teplota T: " + temperature);
