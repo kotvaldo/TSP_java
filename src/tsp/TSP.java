@@ -84,7 +84,7 @@ public class TSP {
             for (int i = 0; i < M; i++) {
                 if (!visited[i]) {
                     for (int j = 0; j < route.size() - 1; j++) {
-                        int increase = data[route.get(j)][i] + data[i][route.get(j + 1)] - 			data[route.get(j)][route.get(j + 1)];
+                        int increase = data[route.get(j)][i] + data[i][route.get(j + 1)] - 	data[route.get(j)][route.get(j + 1)];
 
                         if (increase < bestIncrease) {
                             candidateNode = i;
@@ -238,7 +238,6 @@ public class TSP {
         for (int i = 0; i < path.length - 1; i++) {
             totalDistance += data[path[i]][path[i + 1]]; // Pridáme vzdialenosť medzi uzlami
         }
-        // Pridáme vzdialenosť od posledného uzla späť na prvý uzol
         totalDistance += data[path[path.length - 1]][path[0]];
         return totalDistance;
     }
